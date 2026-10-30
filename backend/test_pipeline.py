@@ -6,8 +6,8 @@ from feature_pipeline import FeaturePipeline
 
 # Paths to models
 MODELS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models"))
-LGB_MODEL_PATH = os.path.join(MODELS_DIR, "muleguard_lightgbm.pkl")
-IF_MODEL_PATH = os.path.join(MODELS_DIR, "muleguard_isolation_forest.pkl")
+LGB_MODEL_PATH = os.path.join(MODELS_DIR, "finguard_lightgbm.pkl")
+IF_MODEL_PATH = os.path.join(MODELS_DIR, "finguard_isolation_forest.pkl")
 
 def main():
     print("==================================================")

@@ -1,8 +1,8 @@
 """
-MuleGuard Supabase Seeding and Migration Tool
+ FinGuard  Supabase Seeding and Migration Tool
 
 This script assists in setting up the Supabase PostgreSQL database tables and 
-seeding them with the synthetic mock data required for MuleGuard.
+seeding them with the synthetic mock data required for  FinGuard .
 
 INSTRUCTIONS:
 1. Copy the SQL DDL block below and execute it in your Supabase Project "SQL Editor".
@@ -20,6 +20,7 @@ from supabase import create_client, Client
 # Load environment variables
 load_dotenv(os.path.expanduser("~/.env"))
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
@@ -114,9 +115,9 @@ def generate_and_seed_data(client: Client):
     # Check tables status by fetching first row
     try:
         client.table("accounts").select("account_id").limit(1).execute()
-        print("✓ Database tables verified.")
+        print("Database tables verified.")
     except Exception as e:
-        print("\n[ERROR] Verified connection failed or tables do not exist in Supabase.")
+        print(f"\n[ERROR] Could not access the accounts table: {type(e).__name__}: {e}")
         print("Please execute the DDL queries inside your Supabase project SQL Editor first!")
         print("-" * 50)
         print(SQL_DDL)
@@ -133,7 +134,7 @@ def generate_and_seed_data(client: Client):
         except Exception:
             pass
         client.table("accounts").delete().neq("account_id", "").execute()
-        print("✓ Staging tables cleared.")
+        print("Staging tables cleared.")
     except Exception as e:
         print(f"Staging tables clear error: {e}")
 
@@ -217,7 +218,7 @@ def generate_and_seed_data(client: Client):
         
     print(f"Inserting {len(accounts)} account records...")
     client.table("accounts").insert(accounts).execute()
-    print("✓ Accounts seeded.")
+    print("Accounts seeded.")
     
     # 2. Seed Alerts
     alerts = []
@@ -250,7 +251,7 @@ def generate_and_seed_data(client: Client):
         
     print(f"Inserting {len(alerts)} alerts...")
     client.table("alerts").insert(alerts).execute()
-    print("✓ Alerts seeded.")
+    print("Alerts seeded.")
     
     # 3. Seed Transactions
     transactions = []
@@ -352,7 +353,7 @@ def generate_and_seed_data(client: Client):
     for j in range(0, len(transactions), chunk_size):
         chunk = transactions[j : j + chunk_size]
         client.table("transactions").insert(chunk).execute()
-        print(f" ✓ Batch {j//chunk_size + 1} ({len(chunk)} rows) inserted.")
+        print(f"Batch {j//chunk_size + 1} ({len(chunk)} rows) inserted.")
         
     # 4. Seed Investigations
     investigations = [
@@ -376,7 +377,7 @@ def generate_and_seed_data(client: Client):
     try:
         print(f"Inserting {len(investigations)} investigations...")
         client.table("investigations").insert(investigations).execute()
-        print("✓ Investigations seeded.")
+        print("Investigations seeded.")
     except Exception as e:
         print(f"Investigations seed error: {e}")
         

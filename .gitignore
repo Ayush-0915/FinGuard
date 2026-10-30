@@ -29,7 +29,7 @@ MANIFEST
 # Datasets & DB files
 *.csv
 *.parquet
-muleguard_temporal_v2.parquet
+ finguard_temporal_v2.parquet
 
 # PyInstaller
 *.manifest
