@@ -9,6 +9,9 @@ import os
 import joblib
 import numpy as np
 import pandas as pd
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 try:
     from database import (
@@ -113,8 +116,14 @@ class LoginRequest(BaseModel):
 
 @app.post("/login")
 def login(req: LoginRequest):
-    # Dummy login for testing
-    if req.employee_id == "admin" or "@" in req.employee_id:
+    configured_email = os.environ.get("AUTH_EMAIL")
+    configured_password = os.environ.get("AUTH_PASSWORD")
+    if (
+        configured_email
+        and configured_password
+        and req.employee_id == configured_email
+        and req.password == configured_password
+    ):
         return {"status": "success", "employee_id": req.employee_id, "token": "mock-jwt-token-12345"}
     raise HTTPException(status_code=401, detail="Invalid Employee ID/Email or Password")
 
@@ -691,23 +700,42 @@ def get_analytics_monthly():
     monthly_fraud_amounts = defaultdict(float)
     monthly_suspicious_accounts = defaultdict(set)
     
-    now = datetime.now()
+    parsed_dates = []
+    for tx in all_transactions:
+        raw_timestamp = str(tx.get("timestamp", "")).replace("Z", "+00:00")
+        try:
+            parsed_dates.append(datetime.fromisoformat(raw_timestamp).replace(tzinfo=None))
+        except ValueError:
+            for fmt in ("%Y/%m/%d %H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+                try:
+                    parsed_dates.append(datetime.strptime(raw_timestamp, fmt))
+                    break
+                except ValueError:
+                    continue
+
+    now = max(parsed_dates) if parsed_dates else datetime.now()
     month_names = []
     for i in range(5, -1, -1):
         m_date = now - timedelta(days=i*30)
         month_names.append(m_date.strftime("%B"))
         
     for tx in all_transactions:
+        raw_timestamp = str(tx.get("timestamp", "")).replace("Z", "+00:00")
         try:
-            dt = datetime.strptime(tx["timestamp"], "%Y-%m-%d %H:%M:%S")
-        except Exception:
-            try:
-                dt = datetime.strptime(tx["timestamp"], "%Y-%m-%d")
-            except Exception:
+            dt = datetime.fromisoformat(raw_timestamp).replace(tzinfo=None)
+        except ValueError:
+            dt = None
+            for fmt in ("%Y/%m/%d %H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+                try:
+                    dt = datetime.strptime(raw_timestamp, fmt)
+                    break
+                except ValueError:
+                    continue
+            if dt is None:
                 continue
                 
         m_name = dt.strftime("%B")
-        is_flagged = tx.get("status") == "FLAGGED"
+        is_flagged = str(tx.get("status", "")).upper() in {"FLAGGED", "CRITICAL"}
         
         if is_flagged:
             monthly_fraud_counts[m_name] += 1
@@ -745,7 +773,7 @@ def get_analytics_monthly():
     risk_breakdown = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0}
     
     for tx in all_transactions:
-        if tx.get("status") == "FLAGGED":
+        if str(tx.get("status", "")).upper() in {"FLAGGED", "CRITICAL"}:
             method = tx.get("payment_method")
             if method in pay_breakdown:
                 pay_breakdown[method] += 1

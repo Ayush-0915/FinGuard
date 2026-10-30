@@ -1,5 +1,8 @@
 import sys
 import os
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 import random
 import requests
 import json
@@ -352,7 +355,14 @@ class ApiClient:
             except Exception as e:
                 print(f"API login error: {e}")
         # Fallback
-        if emp_id == "admin" or "@" in emp_id:
+        configured_email = os.getenv("AUTH_EMAIL")
+        configured_password = os.getenv("AUTH_PASSWORD")
+        if (
+            configured_email
+            and configured_password
+            and emp_id == configured_email
+            and password == configured_password
+        ):
             return {"status": "success", "employee_id": emp_id, "token": "local-token-1234"}
         return None
         
@@ -1243,7 +1253,7 @@ class LoginView(QWidget):
         lbl_emp_title.setStyleSheet("font-weight: bold; font-size: 11px; color: #172B4D;")
         
         self.txt_emp = IconLineEdit("✉️")
-        self.txt_emp.setText("afsarazam404@gmail.com")
+        self.txt_emp.setText(os.getenv("AUTH_EMAIL", ""))
         
         emp_v.addWidget(lbl_emp_title)
         emp_v.addWidget(self.txt_emp)
@@ -1402,7 +1412,7 @@ class LoginView(QWidget):
             self.lbl_error.setText("")
             self.login_success.emit(emp_id)
         else:
-            self.lbl_error.setText("Invalid credentials. Try admin/admin")
+            self.lbl_error.setText("Invalid credentials.")
             
     def handle_forgot(self):
         d = QDialog(self)
@@ -1710,9 +1720,16 @@ class MainWindow(QMainWindow):
         for state in states:
             lbl = QLabel(f"● {state}: Loaded")
             lbl.setStyleSheet(f"color: {COLOR_RISK_LOW}; font-size: 11px; font-weight: bold; margin-right: 20px;")
-            if state == "API Link" or state == "Database":
+            if state == "API Link" and not self.api.is_connected:
                 lbl.setText(f"● {state}: Sandbox (Offline)")
                 lbl.setStyleSheet(f"color: {COLOR_RISK_HIGH}; font-size: 11px; font-weight: bold; margin-right: 20px;")
+            elif state == "Database" and not self.api.is_connected:
+                lbl.setText(f"● {state}: Offline")
+                lbl.setStyleSheet(f"color: {COLOR_RISK_HIGH}; font-size: 11px; font-weight: bold; margin-right: 20px;")
+            elif state == "API Link":
+                lbl.setText(f"● {state}: Connected")
+            elif state == "Database":
+                lbl.setText(f"● {state}: Connected")
             layout.addWidget(lbl)
             self.status_labels[state] = lbl
             

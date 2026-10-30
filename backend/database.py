@@ -26,14 +26,12 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 client: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def fetch_accounts(search="", risk_level="All", region="All"):
-    query = client.table("accounts").select("*")
+    query = client.table("accounts").select("*").range(0, 9999)
     if risk_level and risk_level != "All":
         query = query.eq("risk_level", risk_level)
     if region and region != "All":
         query = query.eq("region", region)
-        
-    res = query.execute()
-    data = res.data
+    data = query.execute().data
     
     if search:
         s_lower = search.lower()
@@ -53,16 +51,14 @@ def fetch_account_detail(acc_id):
     return None
 
 def fetch_transactions(account_id=None, search="", risk_level="All", payment_method="All"):
-    query = client.table("transactions").select("*")
+    query = client.table("transactions").select("*").range(0, 9999)
     if account_id:
         query = query.or_(f"sender_id.eq.{account_id},receiver_id.eq.{account_id}")
     if risk_level and risk_level != "All":
         query = query.eq("risk_level", risk_level)
     if payment_method and payment_method != "All":
         query = query.eq("payment_method", payment_method)
-        
-    res = query.execute()
-    data = res.data
+    data = query.execute().data
     
     if search:
         s_lower = search.lower()
